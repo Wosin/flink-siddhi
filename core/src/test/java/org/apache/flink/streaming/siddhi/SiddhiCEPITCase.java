@@ -185,6 +185,23 @@ public class SiddhiCEPITCase extends StreamingMultipleProgramsTestBase implement
         assertEquals(5, getLineCount(resultPath));
     }
 
+    @Test
+    public void testUnboundedPrimitiveTypeSourceAndReturnTuple() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        DataStream<String> input = env.addSource(new RandomWordSource(5).closeDelay(1500));
+
+        DataStream<Tuple1<String>> output = SiddhiCEP
+                .define("wordStream", input, "words")
+                .cql("from wordStream select words insert into  outputStream")
+                .returns("outputStream");
+
+        String resultPath = tempFolder.newFile().toURI().toString();
+        output.writeAsText(resultPath, FileSystem.WriteMode.OVERWRITE);
+        env.execute();
+        assertEquals(5, getLineCount(resultPath));
+    }
+
+    
     @Test(expected = InvalidTypesException.class)
     public void testUnboundedPojoSourceButReturnInvalidTupleType() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
